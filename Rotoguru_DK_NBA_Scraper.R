@@ -7,6 +7,7 @@ library(stringr)
 # create the days
 x <- seq(as.Date("2015-10-27"), as.Date("2016-01-31"), by = "day")
 
+# remove days where no games were played - otherwise your loop will throw an error
 twentyfifteen <- x[ -which(x %in% as.Date(c("2015-11-26","2015-12-24")))]
 twentyfourteen <- x[-which(x %in% as.Date(c("2014-11-27","2014-12-24","2015-02-13","2015-02-14","2015-02-15","2015-02-16","2015-02-17","2015-02-18")))]
 
@@ -37,23 +38,20 @@ for(i in seq_len(nrow(m))) {
   else NULL
 }
 
-#put the data together
+# put the data together
 data <- do.call(rbind,Map(data.frame,A=tables, B=dates))
 
+# Clean Data
 data <- data[,c(2:25,27)]
 colnames(data) <- c("Player","Team","Away","Opponent","Win/Loss","MP","FG","FGA","FG%","3P","3PA","3P%","FT","FTA","FT%","ORB","DRB","TRB","AST","STL","BLK","TOV","PF","PTS","Date")
-
-#Clean Data
 data <- data[!data$Player %in% c("Player"),]
 cols <- c(7:24)
 data[,cols] <- apply(data[,cols], 2, function(x) as.numeric(as.character(x)))
 
-write.csv(data,"BBall Ref 2015-16 Game Log.csv")
-
-
-#FDPs
+# calculate FanDuel points
 data$FDPs <- apply(data,1,function(x) data$PTS+(data$TRB*1.2)+(data$AST*1.5)+(data$STL*2)+(data$BLK*2)-data$TOV)
 
+# write to csv to save
 write.csv(data, "NBA15-16.csv")
 
 #RotoGuru Scraper----------------------
@@ -62,13 +60,14 @@ library(RCurl)
 library(plyr)
 library(stringr)
 
-#Scraper (if RotoGuru doesn't have data, tables will be NULL, date will Work)
+# Scraper (if RotoGuru doesn't have data, tables will be NULL, date will Work)
 # create the days
 x <- seq(as.Date("2014-10-28"), as.Date("2015-04-15"), by = "day")
 twentyfifteen <- x[ -which(x %in% as.Date(c("2015-11-26","2015-12-24")))]
 twentyfourteen <- x[-which(x %in% as.Date(c("2014-11-27","2014-12-24","2015-02-13","2015-02-14","2015-02-15","2015-02-16","2015-02-17","2015-02-18")))]
 
 x <- twentyfourteen
+ 
 # create a url template for sprintf()
 utmp <- "http://rotoguru1.com/cgi-bin/hyday.pl?game=dk&mon=%d&day=%d&year=%d"
 
@@ -96,9 +95,7 @@ for(i in seq_len(nrow(m))) {
 }
 
 #put the data together
-
 data <- do.call(rbind,Map(data.frame,A=tables, B=dates))
-#data <- rbind(data,data2,data3,data4)
 
 #Clean data
 data <- data[!data$A.V1 %in% c("Unlisted","Guards","Centers","Forwards"),]
@@ -106,8 +103,8 @@ colnames(data) <- c("Position", "Player", "Points","Salary","Team","Opp","Score"
 data <- data[complete.cases(data),]
 data$Started <- ifelse(grepl("\\^",data$Player),"Yes","No")
 data$Player <- gsub("\\^","",data$Player)
-data$Score <- gsub("Â","",data$Score)
-data$Stats <- gsub("Â","",data$Stats)
+data$Score <- gsub("Ã‚","",data$Score)
+data$Stats <- gsub("Ã‚","",data$Stats)
 data$Points <- round(as.numeric(data$Points),1)
 data$Home.Away <- ifelse(grepl("v ",data$Opp),"Home","Away")
 data$Opp <- gsub("v ","",data$Opp)
@@ -132,7 +129,6 @@ data$Win.Loss <- as.factor(data$Win.Loss)
 data$Position <- as.factor(data$Position)
 data <- data[complete.cases(data),]
 
-#str(data)
 #split Name into two columns
 splits <- str_split_fixed(data$Player, ", ", 2)
 #now merge these two columns the other way round
@@ -170,11 +166,10 @@ for(i in seq_len(nrow(m))) {
   dates[[i]] <- y[i]
 }
 
-#put the data together
-
+# put the data together
 data <- do.call(rbind,Map(data.frame,A=tables, B=dates))
 
-#Clean data
+# Clean data
 data <- data[!data$A.V1 %in% c("Date"),]
 data <- data[complete.cases(data),]
 colnames(data) <- c("Day Total","Link","Day","Season","Team","Opp","Site","Final","Rest","Line","Total","SUm","ATSm","OUm","DPS","DPA","SUr","ATSr","OUr","ot","Date")
